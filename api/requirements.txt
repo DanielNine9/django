@@ -1,0 +1,6 @@
+django
+django-rest-framework
+pillow
+django-oauth-toolkit
+dj-rest-auth
+djangorestframework-simplejwt
