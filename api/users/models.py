@@ -61,8 +61,18 @@ class User(AbstractUser):
 class Token(models.Model):
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
     expires_at = models.DateTimeField(_("expires at"))
-    
+    @staticmethod
+    def generate_token():
+        """
+        Generate a random active token.
+        """
+        return random.randint(100000, 999999)
   
+    def is_expired(self):
+        """
+        Check if the token has expired.
+        """
+        return self.expires_at < timezone.now()
     class Meta: 
         abstract = True
     
@@ -77,41 +87,15 @@ class ActiveToken(Token):
         self.expires_at = datetime.now() + timedelta(minutes=10)  
         return super().save(*args, **kwargs)
 
-    def generate_token(self):
-        """
-        Generate a random active token.
-        """
-        return random.randint(100000, 999999)
+class ResetToken(Token):
+    token = models.CharField(_("reset token"), max_length=50, unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="reset_token")
     
-    def is_expired(self):
-        """
-        Check if the token has expired.
-        """
-        return self.expires_at < timezone.now()
-    
-    pass
+    def save(self, *args, **kwargs):
+        self.token = Token.generate_token()
+        self.expires_at = datetime.now() + timedelta(minutes=10)  
+        return super().save(*args, **kwargs)
 
-# class AccessToken(Token):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="access_token")
-#     token = models.CharField(_("access token"), max_length=255, unique=True)
-    
-#     def generate_access_token(user):
-#         payload = {
-#             'user_id': user.id,
-#             'exp': datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION)
-#         }
-#         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-
-# class RefreshToken(Token):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="refresh_token")
-#     token = models.CharField(_("refresh token"), max_length=255, unique=True)
-    
-#     def generate_refresh_token(user):
-#         payload = {
-#             'user_id': user.id,
-#             'exp': datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION)
-#         }
-#         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-  
+   
 
    

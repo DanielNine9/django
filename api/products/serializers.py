@@ -5,7 +5,7 @@ from .models import *
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name']
+        fields = "__all__"
 
  
         
@@ -18,9 +18,15 @@ class ProductSerializer(serializers.ModelSerializer):
             return category_serializer.data
         return None
     
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.product_items.exists():
+            representation['product_items'] = ProductItemSerializer(instance.product_items.all(), many=True).data
+        return representation
+    
     class Meta:
         model = Product
-        fields  = ['id', 'name', 'description', 'price', 'discount', 'category', 'created_at']
+        fields  = "__all__"
         
 class ProductItemSerializer(serializers.ModelSerializer):
     product = serializers.SerializerMethodField()

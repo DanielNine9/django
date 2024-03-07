@@ -19,9 +19,8 @@ class Product(BaseModel):
     name = models.CharField(max_length=123, null=True)
     image = models.ImageField(upload_to="product/%Y/%m", default="product/default.png")
     description = models.TextField(null=True, blank=True)
-    category = models.ForeignKey(Category, related_name="products", on_delete=models.CASCADE, null=True)
-    price = models.FloatField(default = 0)
     discount = models.FloatField(default = 0)
+    category = models.ForeignKey(Category, related_name="products", on_delete=models.CASCADE, null=True)
     
     class Meta: 
         unique_together = ("name", "category")
@@ -32,8 +31,10 @@ class Product(BaseModel):
         return self.name
      
 class ProductItem(BaseModel):
-    variation_options = models.ManyToManyField('VariationOption', related_name="products", null = True)
+    variation_options = models.ManyToManyField('VariationOption', related_name="products", default = [])
     product = models.ForeignKey(Product, related_name = "product_items", on_delete = models.CASCADE, null = True)
+    quantity = models.IntegerField(default = 0)
+    price = models.FloatField(default = 0)
     def __str__(self):
         return "item " + self.product.name
     
