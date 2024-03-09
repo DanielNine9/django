@@ -11,12 +11,12 @@ class BaseModel(models.Model):
      
 class Category(BaseModel):
     name = models.CharField(max_length=100, unique = True)
-    image = models.ImageField(upload_to="category/%Y/%m", default="category/default")
+    image = models.ImageField(upload_to="category/%Y/%m", default = "category/default")
     def __str__(self):
         return str(self.name)
 
 class Product(BaseModel):
-    name = models.CharField(max_length=123, null=True)
+    name = models.CharField(max_length=123, null = False, blank = False)
     image = models.ImageField(upload_to="product/%Y/%m", default="product/default.png")
     description = models.TextField(null=True, blank=True)
     discount = models.FloatField(default = 0)
@@ -34,12 +34,13 @@ class ProductItem(BaseModel):
     variation_options = models.ManyToManyField('VariationOption', related_name="products", default = [])
     product = models.ForeignKey(Product, related_name = "product_items", on_delete = models.CASCADE, null = True)
     quantity = models.IntegerField(default = 0)
+    quantity_in_stock = models.IntegerField(default = 0)
     price = models.FloatField(default = 0)
     def __str__(self):
         return "item " + self.product.name
     
 class VariationName(models.Model):
-    name = models.CharField(max_length = 100, default= _("Default variation name"))
+    name = models.CharField(max_length = 100, null = False, blank = False)
     category = models.ForeignKey(Category, related_name = "variation_names", on_delete = models.CASCADE, null = True)
     class Meta:
         unique_together = ("name", "category")
@@ -48,7 +49,7 @@ class VariationName(models.Model):
         return self.name
     
 class VariationOption(models.Model): 
-    value = models.CharField(max_length= 100, default = _("Default variation option"))
+    value = models.CharField(max_length= 100, null = False, blank = False)
     variation_name = models.ForeignKey(VariationName, related_name = "variation_options", on_delete = models.CASCADE, null = True)
     class Meta:
         unique_together = ("value", "variation_name")

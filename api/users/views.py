@@ -32,16 +32,19 @@ class RegisterApiView(views.APIView):
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
-        if email and password:
-            user_serializer = UserSerializer(data=request.data)
-            if user_serializer.is_valid():
-                user = user_serializer.save()  # Save the user instance
-                return CommonResponse(data=user_serializer.data, status=status.HTTP_201_CREATED, message="User created successfully")
+        try:
+            if email and password:
+                user_serializer = UserSerializer(data=request.data)
+                if user_serializer.is_valid():
+                    user = user_serializer.save()  # Save the user instance
+                    return CommonResponse(data=user_serializer.data, status=status.HTTP_201_CREATED, message="User created successfully")
+                else:
+                    return CommonResponse(errors=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST, message="Validation errors")
             else:
-                return CommonResponse(errors=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST, message="Validation errors")
-        else:
-            return CommonResponse(data={"error": "Email and password are required"}, status=status.HTTP_400_BAD_REQUEST, message="Invalid request data")
-        
+                return CommonResponse(data={"error": "Email and password are required"}, status=status.HTTP_400_BAD_REQUEST, message="Invalid request data")
+        except Exception as e:
+            print(e)
+            return CommonResponse()
 class ActiveUserApiView(views.APIView):
     def post(self, request):
         email = request.data.get("email")

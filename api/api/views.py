@@ -1,6 +1,9 @@
 from django.http import JsonResponse
+from django.utils.translation import gettext as _
 
 
 def index(request): 
-    return JsonResponse({"hello": "world"})
+    output = _("Welcome to my site.")
+    print(output)
+    return JsonResponse({"test": output})
     

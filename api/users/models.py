@@ -67,6 +67,13 @@ class Token(models.Model):
         Generate a random active token.
         """
         return random.randint(100000, 999999)
+    
+    def save(self, *args, **kwargs):
+        print(args)
+        print(kwargs)
+        self.token = self.generate_token()
+        self.expires_at = datetime.now() + timedelta(minutes=10)  
+        return super().save(*args, **kwargs)
   
     def is_expired(self):
         """
@@ -80,12 +87,7 @@ class ActiveToken(Token):
     token = models.CharField(_("active token"), max_length=50, unique=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="active_token")
     
-    def save(self, *args, **kwargs):
-        print(args)
-        print(kwargs)
-        self.token = self.generate_token()
-        self.expires_at = datetime.now() + timedelta(minutes=10)  
-        return super().save(*args, **kwargs)
+
 
 class ResetToken(Token):
     token = models.CharField(_("reset token"), max_length=50, unique=True)
