@@ -11,10 +11,10 @@ from django.utils.translation import gettext_lazy as _
 from common.models import CommonResponse
 from django.urls import reverse
 from rest_framework.permissions import AllowAny
-
+from django.conf import settings
 
 @receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
+def send_mail(sender, instance, created, **kwargs):
     if created:
         active_token = ActiveToken(user=instance)
         active_token.save()
@@ -121,12 +121,16 @@ class LoginViewSet(views.APIView):
         )
         # Check if the request to /api/token was successful
         if response.status_code == status.HTTP_200_OK:
+            user = User.objects.get(email = email)
+            serializer = UserSerializer(user)
+            token_response_data = response.json()
+            data = {**serializer.data, **token_response_data} 
             # Return the response from /api/token
-            return CommonResponse(data=response.json(), status=status.HTTP_200_OK)
+            return CommonResponse(data=data, status=status.HTTP_200_OK)
         else:
             # Return an error response
             return CommonResponse(
-                message="Email and password are not correct",
+                message="Email, password are not correct or this account is not activated",
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -138,6 +142,7 @@ class ResetPasswordViewSet(views.APIView):
         # return CommonResponse(data = {"test": ResetToken.generate_token(token)}, status=status.HTTP_200_OK)
         if email:
             user = User.objects.filter(email=email).first()
+            
             if not user:
                 return CommonResponse(
                     message=_("Email is not found"),
@@ -145,13 +150,14 @@ class ResetPasswordViewSet(views.APIView):
                     data={},
                 )
             else:
+                if not user.is_active:
+                    return CommonResponse(message="Your account is not activated", status=status.HTTP_400_BAD_REQUEST)
                 if hasattr(user, "reset_token"):
                     reset_token = user.reset_token
                     if not reset_token.is_expired():
                         return CommonResponse(
                             message=_("Password reset code sent"),
                             data={},
-                            status=status.HTTP_204_NO_CONTENT,
                         )
                     else:
                         reset_token.token = ResetToken.generate_token()
@@ -159,7 +165,9 @@ class ResetPasswordViewSet(views.APIView):
                     reset_token = ResetToken(user=user)
                 reset_token.save()
                 email_subject = "Reset password"
-                email_body = f"Reset password code: " + str(reset_token.token)
+                client_url = settings.CLIENT_URL + "/reset?email=" + email + "&token=" + str(reset_token.token)
+                
+                email_body = "Click here: " + client_url
                 send_email(email_subject, email_body, email)
                 return CommonResponse(
                     message=_("Send mail successfully"),
@@ -178,7 +186,9 @@ class ResetPasswordViewSet(views.APIView):
         token = request.query_params.get("token")
         password = request.data.get("password")
 
-        if email and token and password.strip():
+        if email and token and password:
+            if password == "":
+                return CommonResponse("Password is not blank")
             user = User.objects.filter(email=email).first()
             if not user:
                 return CommonResponse(
@@ -208,6 +218,7 @@ class ResetPasswordViewSet(views.APIView):
                 message=_("This token is not valid"), status=status.HTTP_400_BAD_REQUEST
             )
         else:
+            print(email, password, token)
             return CommonResponse(
                 message=_("Email, reset token, password are required"),
                 status=status.HTTP_400_BAD_REQUEST,

@@ -1,5 +1,6 @@
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
 from rest_framework import viewsets
 
 from common.models import CommonResponse
@@ -18,7 +19,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
-    def get_queryset(self):
+    def get_serializer_class(self):
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            return CategorySerializer
+        return CategoryUserSerializer
+
+    def get_queryset(self): 
         user = self.request.user
         if user.is_superuser or user.is_staff:  # Admin can see all categories
             return Category.objects.all()
@@ -26,14 +32,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
             return Category.objects.filter(active=True)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return CommonResponse(
-                data=serializer.data,
-                message=_("Adding category successfully"),
-                status=status.HTTP_201_CREATED,
-            )
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return CommonResponse(
             errors=serializer.errors,
             message=_("Adding category failed"),
@@ -41,7 +43,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
         )
 
     def list(self, request, *args, **kwargs):
-        serializers = self.serializer_class(self.get_queryset(), many=True)
+        self.create
+        serializers = self.get_serializer(self.get_queryset(), many=True)
         return CommonResponse(data=serializers.data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk, *args, **kwargs):
@@ -52,7 +55,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
                 data={}, status=status.HTTP_404_NOT_FOUND, message="Category not found"
             )
 
-        serializer = self.serializer_class(category)
+        serializer = self.get_serializer(category)
         return CommonResponse(data=serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk, *args, **kwargs):
@@ -80,7 +83,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
                 message="This category is not found",
             )
 
-        serializer = self.serializer_class(category, data=request.data, partial=False)
+        serializer = self.get_serializer(category, data=request.data, partial=False)
         if serializer.is_valid():
             serializer.save()
             return CommonResponse(
@@ -106,7 +109,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         if user.is_superuser or user.is_staff:
             return Product.objects.all()
 
-        return Product.objects.all(active=True)
+        return Product.objects.filter(active=True)
 
     def create(self, request, *args, **kwargs):
         category_id = request.data.get("category")
@@ -114,7 +117,6 @@ class ProductViewSet(viewsets.ModelViewSet):
             # Validate category ID existence (optional)
             if category_id is not None:
                 category = Category.objects.get(pk=int(category_id), active=True)
-                request.data["category"] = category
 
             serializer = self.get_serializer(data=request.data)
             if not serializer.is_valid():
@@ -197,7 +199,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             )
 
     def list(self, request, *args, **kwargs):
-        serializers = self.serializer_class(self.get_queryset(), many=True)
+        serializers = self.get_serializer(self.get_queryset(), many=True)
         return CommonResponse(data=serializers.data)
 
     def retrieve(self, request, pk, *args, **kwargs):
@@ -211,7 +213,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 message=_("Product is not found"),
             )
 
-        serializer = self.serializer_class(Product)
+        serializer = self.get_serializer(Product)
         return CommonResponse(data=serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk, *args, **kwargs):
@@ -388,7 +390,7 @@ class VariationNameViewSet(viewsets.ModelViewSet):
         return VariationName.objects.all()
 
     def list(self, request, *args, **kwargs):
-        serializers = self.serializer_class(self.get_queryset(), many=True)
+        serializers = self.get_serializer(self.get_queryset(), many=True)
         return CommonResponse(data=serializers.data)
 
     def retrieve(self, request, pk, *args, **kwargs):
@@ -401,7 +403,7 @@ class VariationNameViewSet(viewsets.ModelViewSet):
                 message=_("Variation name is not found"),
             )
 
-        serializer = self.serializer_class(variation_name)
+        serializer = self.get_serializer(variation_name)
         return CommonResponse(data=serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk, *args, **kwargs):
@@ -519,7 +521,7 @@ class VariationOptionViewSet(viewsets.ModelViewSet):
         return VariationOption.objects.all()
 
     def list(self, request, *args, **kwargs):
-        serializers = self.serializer_class(self.get_queryset(), many=True)
+        serializers = self.get_serializer(self.get_queryset(), many=True)
         return CommonResponse(data=serializers.data)
 
     def retrieve(self, request, pk, *args, **kwargs):
@@ -532,7 +534,7 @@ class VariationOptionViewSet(viewsets.ModelViewSet):
                 message=_("Variation option is not found"),
             )
 
-        serializer = self.serializer_class(variation_name)
+        serializer = self.get_serializer(variation_name)
         return CommonResponse(data=serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk, *args, **kwargs):

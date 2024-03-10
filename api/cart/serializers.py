@@ -13,9 +13,10 @@ class CartSerializer(serializers.ModelSerializer):
     
     def get_cost(self, cart):
         if cart:
-            return cart.cost()
+            return cart.cost
         return 0
  
     class Meta:
         model = CartItem
         fields = "__all__"
+        extra_kwargs = {'cost': {'read_only': True}}

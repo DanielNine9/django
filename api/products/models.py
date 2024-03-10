@@ -21,10 +21,10 @@ class Product(BaseModel):
     description = models.TextField(null=True, blank=True)
     discount = models.FloatField(default = 0)
     category = models.ForeignKey(Category, related_name="products", on_delete=models.CASCADE, null=True)
-    
+    price = models.FloatField(default = 0)
     class Meta: 
         unique_together = ("name", "category")
-        
+         
     def __str__(self): 
         if self.category:
             return self.name + " in category " + self.category.name

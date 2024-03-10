@@ -1,1 +1,11 @@
 env
+
+# dependencies
+client/node_modules
+
+
+# testing
+client/coverage
+
+# production
+client/build

@@ -67,15 +67,18 @@ class CartItemViewSet(viewsets.ModelViewSet):
             return CommonResponse(
                 status=status.HTTP_404_NOT_FOUND, message=_("Cart item is not found")
             )
+        quantity_in_stock = cart_item.product.quantity_in_stock
+        if (quantity_in_stock - request.data.get("quantity")) < 0:
+            return CommonResponse(status = status.HTTP_400_BAD_REQUEST, message = _("Quantity greater than quantity in stock"))
         serializer = self.get_serializer(cart_item, data=request.data)
-        if serializer.is_valid():
+        if not serializer.is_valid():
             return CommonResponse(
                 status=status.HTTP_400_BAD_REQUEST,
                 message="Updating cart item failed",
                 erros=serializer.errors,
             )
         self.perform_update(serializer)
-        return CommonResponse
+        return CommonResponse(data = serializer.data, message = "Updating cart item successfully")
 
     def destroy(self, request, *args, **kwargs):
         try:

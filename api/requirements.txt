@@ -6,3 +6,4 @@ dj-rest-auth
 djangorestframework-simplejwt
 django_countries
 setuptools
+django-cors-headers
