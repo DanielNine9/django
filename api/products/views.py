@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 
 from common.models import CommonResponse
@@ -200,7 +201,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         return CommonResponse(data=serializers.data)
 
     def retrieve(self, request, pk, *args, **kwargs):
-        
+
         try:
             Product = self.get_queryset().get(pk=pk)
         except Product.DoesNotExist:
@@ -247,52 +248,135 @@ class ProductItemViewSet(viewsets.ModelViewSet):
         return CommonResponse(data=serializers.data)
 
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
+        try:
+            instance = self.get_object()
+        except Exception as e:
+            return CommonResponse(status=status.HTTP_404_NOT_FOUND, message="Product item is not found")
         serializer = self.get_serializer(instance)
         return CommonResponse(data=serializer.data)
 
     def create(self, request, *args, **kwargs):
         variation_options_request = request.data.pop("variation_options", [])
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
+        if not serializer.is_valid():
+            return CommonResponse(message = "Adding product item failed", errors = serializer.errors,
+                                  status = status.HTTP_400_BAD_REQUEST)
+
         product_id = request.data.get("product")
         if product_id is None:
-            return CommonResponse(message=_("Product is not found"), status=status.HTTP_404_NOT_FOUND)
-        
+            return CommonResponse(
+                message=_("Product is not found"), status=status.HTTP_404_NOT_FOUND
+            )
+
         try:
             product = Product.objects.get(pk=int(product_id), active=True)
             variation_names = product.category.variation_names.all()
         except Product.DoesNotExist:
-            return CommonResponse(message=_("Product is not found"), status=status.HTTP_404_NOT_FOUND)
-        
+            return CommonResponse(
+                message=_("Product is not found"), status=status.HTTP_404_NOT_FOUND
+            )
+        product_item = serializer.save(product=product)
         variation_options = []
         for key, value in variation_options_request.items():
             if key in [var_name.name for var_name in variation_names]:
                 try:
-                    variation_name = VariationName.objects.get(name=key, category = product.category)
-                    variation_option = VariationOption.objects.get(value=value, variation_name=variation_name)
+                    variation_name = VariationName.objects.get(
+                        name=key, category=product.category
+                    )
+                    variation_option = VariationOption.objects.get(
+                        value=value, variation_name=variation_name
+                    )
                 except VariationOption.DoesNotExist:
-                    variation_option = VariationOption.objects.create(value=value, variation_name=variation_name)
+                    variation_option = VariationOption.objects.create(
+                        value=value, variation_name=variation_name
+                    )
+                variation_option.products.add(product_item)
+                variation_option.save()
                 variation_options.append(variation_option)
 
-        product_item = serializer.save(product=product)
+  
         product_item.variation_options.set(variation_options)
-        
+
         return CommonResponse(data=serializer.data, status=status.HTTP_201_CREATED)
+
+    # def get_object(self, queryset=None):
+    #     """
+    #     Customizes the retrieval of the object instance.
+    #     """
+    #     # Get the primary key (pk) from the URL kwargs
+    #     pk = self.kwargs.get('pk')
+
+    #     # You can customize the queryset here if needed
+    #     queryset = ProductItem.objects.filter(is_active=True)
+
+    #     # Retrieve the object instance or return 404 if not found
+    #     instance = get_object_or_404(queryset, pk=pk)
+
+    #     return instance
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
-        instance = self.get_object()
+        try:
+            instance = self.get_object()
+        except Exception as e:
+            return CommonResponse(status=status.HTTP_404_NOT_FOUND, message="Product item is not found")
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return CommonResponse(message = "Updating product item failed", errors = serializer.errors,
+                                  status = status.HTTP_400_BAD_REQUEST)
+            
+    
+        variation_options_request = request.data.pop("variation_options", [])
+        product_id = request.data.get("product")
+        if product_id is None:
+            return CommonResponse(
+                message=_("Product is not found"), status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            product = Product.objects.get(pk=int(product_id), active=True)
+            variation_names = product.category.variation_names.all()
+        except Product.DoesNotExist:
+            return CommonResponse(
+                message=_("Product is not found"), status=status.HTTP_404_NOT_FOUND
+            )
+
+        variation_options = []
+        product_item = serializer.save(product=product)
+        for var_opt in instance.variation_options.all():
+            # Exclude the newly saved product_item from each variation option
+            print(var_opt.__dict__)
+            # var_opt.products.remove(product_item)
+            # var_opt.save()
+            
+        for key, value in variation_options_request.items():
+            if key in [var_name.name for var_name in variation_names]:
+                try:
+                    variation_name = VariationName.objects.get(
+                        name=key, category=product.category
+                    )
+                    variation_option = VariationOption.objects.get(
+                        value=value, variation_name=variation_name
+                    )
+                except VariationOption.DoesNotExist:
+                    variation_option = VariationOption.objects.create(
+                        value=value, variation_name=variation_name
+                    )
+                variation_option.products.add(product_item)
+                variation_option.save()
+                variation_options.append(variation_option)
+
+        product_item.variation_options.set(variation_options)
         serializer.save()
         return CommonResponse(data=serializer.data)
 
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
+        try:
+            instance = self.get_object()
+        except Exception as e:
+            return CommonResponse(status=status.HTTP_404_NOT_FOUND, message="Product item is not found")
         self.perform_destroy(instance)
-        return CommonResponse(status=status.HTTP_204_NO_CONTENT)
+        return CommonResponse(status=status.HTTP_204_NO_CONTENT, message= _("Product item deleted"))
 
 
 class VariationNameViewSet(viewsets.ModelViewSet):

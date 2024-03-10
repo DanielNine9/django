@@ -4,3 +4,5 @@ pillow
 django-oauth-toolkit
 dj-rest-auth
 djangorestframework-simplejwt
+django_countries
+setuptools

@@ -52,7 +52,7 @@ class ProductItemSerializer(serializers.ModelSerializer):
         variation_options = {}
         for option in obj.variation_options.all():
             variation_name = option.variation_name.name
-            value = option.value
+            value = {option.value}
             variation_options.setdefault(variation_name, []).append(value)
         return variation_options
 

@@ -32,10 +32,11 @@ class Product(BaseModel):
      
 class ProductItem(BaseModel):
     variation_options = models.ManyToManyField('VariationOption', related_name="products", default = [])
-    product = models.ForeignKey(Product, related_name = "product_items", on_delete = models.CASCADE, null = True)
+    product = models.ForeignKey(Product, related_name = "product_items", on_delete = models.CASCADE, null = False)
     quantity = models.IntegerField(default = 0)
     quantity_in_stock = models.IntegerField(default = 0)
     price = models.FloatField(default = 0)
+    
     def __str__(self):
         return "item " + self.product.name
     
