@@ -1,11 +1,23 @@
 version: '3.8'
 services:
-  dev-database:
+  db:
     image: postgres:15.0
-    container_name: "hello"
+    container_name: "haha"
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USERNAME: postgres
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+    expose:
+      - 5432
+
+  app: 
+    build: .
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+    expose:
+      - 8080
+    ports:
+      - "8000:8000"

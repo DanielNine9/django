@@ -17,6 +17,7 @@ from datetime import timedelta
 CLIENT_URL = os.environ.get("CLIENT_URL", "http://localhost:3000")
 
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -115,18 +116,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'api.wsgi.application'
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+EMAIL_HOST = os.getenv("EMAIL_HOST")
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+DB_NAME = os.environ.get("DB_NAME", "postgres")
+DB_USER = os.environ.get("DB_USER", "postgres")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "postgres")
+DB_HOST = os.environ.get("DB_HOST", "localhost")
+DB_PORT = os.environ.get("DB_PORT", "5432")
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'localhost',
-        'PORT': '5432'
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
     },
     'test': {
         'ENGINE': 'django.db.backends.sqlite3',

@@ -7,3 +7,6 @@ djangorestframework-simplejwt
 django_countries
 setuptools
 django-cors-headers
+psycopg
+psycopg2
+python-dotenv
