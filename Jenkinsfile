@@ -13,6 +13,14 @@ pipeline {
                 checkout([$class: 'GitSCM', branches: [[name: "*/${BRANCH_NAME}"]], userRemoteConfigs: [[url: "${REPO_URL}"]]])
             }
         }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'python -m venv venv'
+                sh 'source venv/bin/activate && pip install -r requirements.txt'
+            }
+        }
+
         
         stage('Run Tests') {
             steps {
